@@ -3,26 +3,92 @@ const cors = require('cors');
 
 const { v4: uuidv4, validate } = require('uuid');
 
+
 const app = express();
 app.use(express.json());
 app.use(cors());
 
 const users = [];
 
+function checkIfValidUUID (str) {
+  const regexExp = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi;
+
+  return regexExp.test(str);
+
+}
+
 function checksExistsUserAccount(request, response, next) {
   // Complete aqui
+  const {username} = request.headers;
+
+  const checkExist = users.find((checkExist) => checkExist.username === username);
+
+  if (!checkExist){
+    return response.status(404).json({error: "User not Exist"});
+  }
+
+  request.user = checkExist;
+
+  return next();
+
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
   // Complete aqui
+  const {user} = request;
+
+  if(user.pro === true || user.todos.length < 10){
+    return next();
+  }
+
+  return response.status(403);
+  
 }
 
 function checksTodoExists(request, response, next) {
   // Complete aqui
+  const {username} = request.headers;
+  const {id} = request.params;
+
+  const userExist = users.find((userExist) => userExist.username === username);
+
+  if(!userExist){
+    return response.status(404).json({error: "User not exist"});
+  } 
+
+  const tf = checkIfValidUUID(id);
+
+  if(tf === false){
+    return response.status(400).json({error:"The format Id is incorrectly"});
+  }
+  
+  
+  const idExist = userExist.todos.find((idExist) => idExist.id === id);
+  
+  if(!idExist){
+    return response.status(404).json({error:"Id not Exist"});
+  }
+  
+  
+  request.todo = idExist;
+  request.user = userExist;
+
+  return next();
 }
 
 function findUserById(request, response, next) {
   // Complete aqui
+  const {id} = request.params;
+   
+  const checkUserExist = users.find((checkUserExist) => checkUserExist.id === id);
+
+  if(!checkUserExist){
+    return response.status(404);
+  }
+
+  request.user = checkUserExist;
+
+  return next();
 }
 
 app.post('/users', (request, response) => {
